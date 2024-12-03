@@ -3,290 +3,57 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = exports.SHOULD_STOP = exports.SHOULD_SKIP = exports.REMOVED = void 0;
-var virtualTypes = require("./lib/virtual-types.js");
-var _debug = require("debug");
-var _index = require("../index.js");
-var _index2 = require("../scope/index.js");
-var _t = require("@babel/types");
-var t = _t;
-var cache = require("../cache.js");
-var _generator = require("@babel/generator");
-var NodePath_ancestry = require("./ancestry.js");
-var NodePath_inference = require("./inference/index.js");
-var NodePath_replacement = require("./replacement.js");
-var NodePath_evaluation = require("./evaluation.js");
-var NodePath_conversion = require("./conversion.js");
-var NodePath_introspection = require("./introspection.js");
-var _context = require("./context.js");
-var NodePath_context = _context;
-var NodePath_removal = require("./removal.js");
-var NodePath_modification = require("./modification.js");
-var NodePath_family = require("./family.js");
-var NodePath_comments = require("./comments.js");
-var NodePath_virtual_types_validator = require("./lib/virtual-types-validator.js");
-const {
-  validate
-} = _t;
-const debug = _debug("babel");
-const REMOVED = exports.REMOVED = 1 << 0;
-const SHOULD_STOP = exports.SHOULD_STOP = 1 << 1;
-const SHOULD_SKIP = exports.SHOULD_SKIP = 1 << 2;
-const NodePath_Final = exports.default = class NodePath {
-  constructor(hub, parent) {
-    this.contexts = [];
-    this.state = null;
-    this.opts = null;
-    this._traverseFlags = 0;
-    this.skipKeys = null;
-    this.parentPath = null;
-    this.container = null;
-    this.listKey = null;
-    this.key = null;
-    this.node = null;
-    this.type = null;
-    this.parent = parent;
-    this.hub = hub;
-    this.data = null;
-    this.context = null;
-    this.scope = null;
-  }
-  get removed() {
-    return (this._traverseFlags & 1) > 0;
-  }
-  set removed(v) {
-    if (v) this._traverseFlags |= 1;else this._traverseFlags &= -2;
-  }
-  get shouldStop() {
-    return (this._traverseFlags & 2) > 0;
-  }
-  set shouldStop(v) {
-    if (v) this._traverseFlags |= 2;else this._traverseFlags &= -3;
-  }
-  get shouldSkip() {
-    return (this._traverseFlags & 4) > 0;
-  }
-  set shouldSkip(v) {
-    if (v) this._traverseFlags |= 4;else this._traverseFlags &= -5;
-  }
-  static get({
-    hub,
-    parentPath,
-    parent,
-    container,
-    listKey,
-    key
-  }) {
-    if (!hub && parentPath) {
-      hub = parentPath.hub;
-    }
-    if (!parent) {
-      throw new Error("To get a node path the parent needs to exist");
-    }
-    const targetNode = container[key];
-    const paths = cache.getOrCreateCachedPaths(hub, parent);
-    let path = paths.get(targetNode);
-    if (!path) {
-      path = new NodePath(hub, parent);
-      if (targetNode) paths.set(targetNode, path);
-    }
-    _context.setup.call(path, parentPath, container, listKey, key);
-    return path;
-  }
-  getScope(scope) {
-    return this.isScope() ? new _index2.default(this) : scope;
-  }
-  setData(key, val) {
-    if (this.data == null) {
-      this.data = Object.create(null);
-    }
-    return this.data[key] = val;
-  }
-  getData(key, def) {
-    if (this.data == null) {
-      this.data = Object.create(null);
-    }
-    let val = this.data[key];
-    if (val === undefined && def !== undefined) val = this.data[key] = def;
-    return val;
-  }
-  hasNode() {
-    return this.node != null;
-  }
-  buildCodeFrameError(msg, Error = SyntaxError) {
-    return this.hub.buildError(this.node, msg, Error);
-  }
-  traverse(visitor, state) {
-    (0, _index.default)(this.node, visitor, this.scope, state, this);
-  }
-  set(key, node) {
-    validate(this.node, key, node);
-    this.node[key] = node;
-  }
-  getPathLocation() {
-    const parts = [];
-    let path = this;
-    do {
-      let key = path.key;
-      if (path.inList) key = `${path.listKey}[${key}]`;
-      parts.unshift(key);
-    } while (path = path.parentPath);
-    return parts.join(".");
-  }
-  debug(message) {
-    if (!debug.enabled) return;
-    debug(`${this.getPathLocation()} ${this.type}: ${message}`);
-  }
-  toString() {
-    return (0, _generator.default)(this.node).code;
-  }
-  get inList() {
-    return !!this.listKey;
-  }
-  set inList(inList) {
-    if (!inList) {
-      this.listKey = null;
-    }
-  }
-  get parentKey() {
-    return this.listKey || this.key;
-  }
-};
-const methods = {
-  findParent: NodePath_ancestry.findParent,
-  find: NodePath_ancestry.find,
-  getFunctionParent: NodePath_ancestry.getFunctionParent,
-  getStatementParent: NodePath_ancestry.getStatementParent,
-  getEarliestCommonAncestorFrom: NodePath_ancestry.getEarliestCommonAncestorFrom,
-  getDeepestCommonAncestorFrom: NodePath_ancestry.getDeepestCommonAncestorFrom,
-  getAncestry: NodePath_ancestry.getAncestry,
-  isAncestor: NodePath_ancestry.isAncestor,
-  isDescendant: NodePath_ancestry.isDescendant,
-  inType: NodePath_ancestry.inType,
-  getTypeAnnotation: NodePath_inference.getTypeAnnotation,
-  isBaseType: NodePath_inference.isBaseType,
-  couldBeBaseType: NodePath_inference.couldBeBaseType,
-  baseTypeStrictlyMatches: NodePath_inference.baseTypeStrictlyMatches,
-  isGenericType: NodePath_inference.isGenericType,
-  replaceWithMultiple: NodePath_replacement.replaceWithMultiple,
-  replaceWithSourceString: NodePath_replacement.replaceWithSourceString,
-  replaceWith: NodePath_replacement.replaceWith,
-  replaceExpressionWithStatements: NodePath_replacement.replaceExpressionWithStatements,
-  replaceInline: NodePath_replacement.replaceInline,
-  evaluateTruthy: NodePath_evaluation.evaluateTruthy,
-  evaluate: NodePath_evaluation.evaluate,
-  toComputedKey: NodePath_conversion.toComputedKey,
-  ensureBlock: NodePath_conversion.ensureBlock,
-  unwrapFunctionEnvironment: NodePath_conversion.unwrapFunctionEnvironment,
-  arrowFunctionToExpression: NodePath_conversion.arrowFunctionToExpression,
-  splitExportDeclaration: NodePath_conversion.splitExportDeclaration,
-  ensureFunctionName: NodePath_conversion.ensureFunctionName,
-  matchesPattern: NodePath_introspection.matchesPattern,
-  isStatic: NodePath_introspection.isStatic,
-  isNodeType: NodePath_introspection.isNodeType,
-  canHaveVariableDeclarationOrExpression: NodePath_introspection.canHaveVariableDeclarationOrExpression,
-  canSwapBetweenExpressionAndStatement: NodePath_introspection.canSwapBetweenExpressionAndStatement,
-  isCompletionRecord: NodePath_introspection.isCompletionRecord,
-  isStatementOrBlock: NodePath_introspection.isStatementOrBlock,
-  referencesImport: NodePath_introspection.referencesImport,
-  getSource: NodePath_introspection.getSource,
-  willIMaybeExecuteBefore: NodePath_introspection.willIMaybeExecuteBefore,
-  _guessExecutionStatusRelativeTo: NodePath_introspection._guessExecutionStatusRelativeTo,
-  resolve: NodePath_introspection.resolve,
-  isConstantExpression: NodePath_introspection.isConstantExpression,
-  isInStrictMode: NodePath_introspection.isInStrictMode,
-  isDenylisted: NodePath_context.isDenylisted,
-  visit: NodePath_context.visit,
-  skip: NodePath_context.skip,
-  skipKey: NodePath_context.skipKey,
-  stop: NodePath_context.stop,
-  setContext: NodePath_context.setContext,
-  requeue: NodePath_context.requeue,
-  requeueComputedKeyAndDecorators: NodePath_context.requeueComputedKeyAndDecorators,
-  remove: NodePath_removal.remove,
-  insertBefore: NodePath_modification.insertBefore,
-  insertAfter: NodePath_modification.insertAfter,
-  unshiftContainer: NodePath_modification.unshiftContainer,
-  pushContainer: NodePath_modification.pushContainer,
-  getOpposite: NodePath_family.getOpposite,
-  getCompletionRecords: NodePath_family.getCompletionRecords,
-  getSibling: NodePath_family.getSibling,
-  getPrevSibling: NodePath_family.getPrevSibling,
-  getNextSibling: NodePath_family.getNextSibling,
-  getAllNextSiblings: NodePath_family.getAllNextSiblings,
-  getAllPrevSiblings: NodePath_family.getAllPrevSiblings,
-  get: NodePath_family.get,
-  getAssignmentIdentifiers: NodePath_family.getAssignmentIdentifiers,
-  getBindingIdentifiers: NodePath_family.getBindingIdentifiers,
-  getOuterBindingIdentifiers: NodePath_family.getOuterBindingIdentifiers,
-  getBindingIdentifierPaths: NodePath_family.getBindingIdentifierPaths,
-  getOuterBindingIdentifierPaths: NodePath_family.getOuterBindingIdentifierPaths,
-  shareCommentsWithSiblings: NodePath_comments.shareCommentsWithSiblings,
-  addComment: NodePath_comments.addComment,
-  addComments: NodePath_comments.addComments
-};
-Object.assign(NodePath_Final.prototype, methods);
-{
-  NodePath_Final.prototype.arrowFunctionToShadowed = NodePath_conversion[String("arrowFunctionToShadowed")];
-  Object.assign(NodePath_Final.prototype, {
-    has: NodePath_introspection[String("has")],
-    is: NodePath_introspection[String("is")],
-    isnt: NodePath_introspection[String("isnt")],
-    equals: NodePath_introspection[String("equals")],
-    hoist: NodePath_modification[String("hoist")],
-    updateSiblingKeys: NodePath_modification.updateSiblingKeys,
-    call: NodePath_context.call,
-    isBlacklisted: NodePath_context[String("isBlacklisted")],
-    setScope: NodePath_context.setScope,
-    resync: NodePath_context.resync,
-    popContext: NodePath_context.popContext,
-    pushContext: NodePath_context.pushContext,
-    setup: NodePath_context.setup,
-    setKey: NodePath_context.setKey
-  });
-}
-{
-  NodePath_Final.prototype._guessExecutionStatusRelativeToDifferentFunctions = NodePath_introspection._guessExecutionStatusRelativeTo;
-  NodePath_Final.prototype._guessExecutionStatusRelativeToDifferentFunctions = NodePath_introspection._guessExecutionStatusRelativeTo;
-  Object.assign(NodePath_Final.prototype, {
-    _getTypeAnnotation: NodePath_inference._getTypeAnnotation,
-    _replaceWith: NodePath_replacement._replaceWith,
-    _resolve: NodePath_introspection._resolve,
-    _call: NodePath_context._call,
-    _resyncParent: NodePath_context._resyncParent,
-    _resyncKey: NodePath_context._resyncKey,
-    _resyncList: NodePath_context._resyncList,
-    _resyncRemoved: NodePath_context._resyncRemoved,
-    _getQueueContexts: NodePath_context._getQueueContexts,
-    _removeFromScope: NodePath_removal._removeFromScope,
-    _callRemovalHooks: NodePath_removal._callRemovalHooks,
-    _remove: NodePath_removal._remove,
-    _markRemoved: NodePath_removal._markRemoved,
-    _assertUnremoved: NodePath_removal._assertUnremoved,
-    _containerInsert: NodePath_modification._containerInsert,
-    _containerInsertBefore: NodePath_modification._containerInsertBefore,
-    _containerInsertAfter: NodePath_modification._containerInsertAfter,
-    _verifyNodeList: NodePath_modification._verifyNodeList,
-    _getKey: NodePath_family._getKey,
-    _getPattern: NodePath_family._getPattern
-  });
-}
-for (const type of t.TYPES) {
-  const typeKey = `is${type}`;
-  const fn = t[typeKey];
-  NodePath_Final.prototype[typeKey] = function (opts) {
-    return fn(this.node, opts);
-  };
-  NodePath_Final.prototype[`assert${type}`] = function (opts) {
-    if (!fn(this.node, opts)) {
-      throw new TypeError(`Expected node path of type ${type}`);
-    }
-  };
-}
-Object.assign(NodePath_Final.prototype, NodePath_virtual_types_validator);
-for (const type of Object.keys(virtualTypes)) {
-  if (type[0] === "_") continue;
-  if (!t.TYPES.includes(type)) t.TYPES.push(type);
-}
+exports.WHILE_TYPES = exports.USERWHITESPACABLE_TYPES = exports.UNARYLIKE_TYPES = exports.TYPESCRIPT_TYPES = exports.TSTYPE_TYPES = exports.TSTYPEELEMENT_TYPES = exports.TSENTITYNAME_TYPES = exports.TSBASETYPE_TYPES = exports.TERMINATORLESS_TYPES = exports.STATEMENT_TYPES = exports.STANDARDIZED_TYPES = exports.SCOPABLE_TYPES = exports.PUREISH_TYPES = exports.PROPERTY_TYPES = exports.PRIVATE_TYPES = exports.PATTERN_TYPES = exports.PATTERNLIKE_TYPES = exports.OBJECTMEMBER_TYPES = exports.MODULESPECIFIER_TYPES = exports.MODULEDECLARATION_TYPES = exports.MISCELLANEOUS_TYPES = exports.METHOD_TYPES = exports.LVAL_TYPES = exports.LOOP_TYPES = exports.LITERAL_TYPES = exports.JSX_TYPES = exports.IMPORTOREXPORTDECLARATION_TYPES = exports.IMMUTABLE_TYPES = exports.FUNCTION_TYPES = exports.FUNCTIONPARENT_TYPES = exports.FOR_TYPES = exports.FORXSTATEMENT_TYPES = exports.FLOW_TYPES = exports.FLOWTYPE_TYPES = exports.FLOWPREDICATE_TYPES = exports.FLOWDECLARATION_TYPES = exports.FLOWBASEANNOTATION_TYPES = exports.EXPRESSION_TYPES = exports.EXPRESSIONWRAPPER_TYPES = exports.EXPORTDECLARATION_TYPES = exports.ENUMMEMBER_TYPES = exports.ENUMBODY_TYPES = exports.DECLARATION_TYPES = exports.CONDITIONAL_TYPES = exports.COMPLETIONSTATEMENT_TYPES = exports.CLASS_TYPES = exports.BLOCK_TYPES = exports.BLOCKPARENT_TYPES = exports.BINARY_TYPES = exports.ACCESSOR_TYPES = void 0;
+var _index = require("../../definitions/index.js");
+const STANDARDIZED_TYPES = exports.STANDARDIZED_TYPES = _index.FLIPPED_ALIAS_KEYS["Standardized"];
+const EXPRESSION_TYPES = exports.EXPRESSION_TYPES = _index.FLIPPED_ALIAS_KEYS["Expression"];
+const BINARY_TYPES = exports.BINARY_TYPES = _index.FLIPPED_ALIAS_KEYS["Binary"];
+const SCOPABLE_TYPES = exports.SCOPABLE_TYPES = _index.FLIPPED_ALIAS_KEYS["Scopable"];
+const BLOCKPARENT_TYPES = exports.BLOCKPARENT_TYPES = _index.FLIPPED_ALIAS_KEYS["BlockParent"];
+const BLOCK_TYPES = exports.BLOCK_TYPES = _index.FLIPPED_ALIAS_KEYS["Block"];
+const STATEMENT_TYPES = exports.STATEMENT_TYPES = _index.FLIPPED_ALIAS_KEYS["Statement"];
+const TERMINATORLESS_TYPES = exports.TERMINATORLESS_TYPES = _index.FLIPPED_ALIAS_KEYS["Terminatorless"];
+const COMPLETIONSTATEMENT_TYPES = exports.COMPLETIONSTATEMENT_TYPES = _index.FLIPPED_ALIAS_KEYS["CompletionStatement"];
+const CONDITIONAL_TYPES = exports.CONDITIONAL_TYPES = _index.FLIPPED_ALIAS_KEYS["Conditional"];
+const LOOP_TYPES = exports.LOOP_TYPES = _index.FLIPPED_ALIAS_KEYS["Loop"];
+const WHILE_TYPES = exports.WHILE_TYPES = _index.FLIPPED_ALIAS_KEYS["While"];
+const EXPRESSIONWRAPPER_TYPES = exports.EXPRESSIONWRAPPER_TYPES = _index.FLIPPED_ALIAS_KEYS["ExpressionWrapper"];
+const FOR_TYPES = exports.FOR_TYPES = _index.FLIPPED_ALIAS_KEYS["For"];
+const FORXSTATEMENT_TYPES = exports.FORXSTATEMENT_TYPES = _index.FLIPPED_ALIAS_KEYS["ForXStatement"];
+const FUNCTION_TYPES = exports.FUNCTION_TYPES = _index.FLIPPED_ALIAS_KEYS["Function"];
+const FUNCTIONPARENT_TYPES = exports.FUNCTIONPARENT_TYPES = _index.FLIPPED_ALIAS_KEYS["FunctionParent"];
+const PUREISH_TYPES = exports.PUREISH_TYPES = _index.FLIPPED_ALIAS_KEYS["Pureish"];
+const DECLARATION_TYPES = exports.DECLARATION_TYPES = _index.FLIPPED_ALIAS_KEYS["Declaration"];
+const PATTERNLIKE_TYPES = exports.PATTERNLIKE_TYPES = _index.FLIPPED_ALIAS_KEYS["PatternLike"];
+const LVAL_TYPES = exports.LVAL_TYPES = _index.FLIPPED_ALIAS_KEYS["LVal"];
+const TSENTITYNAME_TYPES = exports.TSENTITYNAME_TYPES = _index.FLIPPED_ALIAS_KEYS["TSEntityName"];
+const LITERAL_TYPES = exports.LITERAL_TYPES = _index.FLIPPED_ALIAS_KEYS["Literal"];
+const IMMUTABLE_TYPES = exports.IMMUTABLE_TYPES = _index.FLIPPED_ALIAS_KEYS["Immutable"];
+const USERWHITESPACABLE_TYPES = exports.USERWHITESPACABLE_TYPES = _index.FLIPPED_ALIAS_KEYS["UserWhitespacable"];
+const METHOD_TYPES = exports.METHOD_TYPES = _index.FLIPPED_ALIAS_KEYS["Method"];
+const OBJECTMEMBER_TYPES = exports.OBJECTMEMBER_TYPES = _index.FLIPPED_ALIAS_KEYS["ObjectMember"];
+const PROPERTY_TYPES = exports.PROPERTY_TYPES = _index.FLIPPED_ALIAS_KEYS["Property"];
+const UNARYLIKE_TYPES = exports.UNARYLIKE_TYPES = _index.FLIPPED_ALIAS_KEYS["UnaryLike"];
+const PATTERN_TYPES = exports.PATTERN_TYPES = _index.FLIPPED_ALIAS_KEYS["Pattern"];
+const CLASS_TYPES = exports.CLASS_TYPES = _index.FLIPPED_ALIAS_KEYS["Class"];
+const IMPORTOREXPORTDECLARATION_TYPES = exports.IMPORTOREXPORTDECLARATION_TYPES = _index.FLIPPED_ALIAS_KEYS["ImportOrExportDeclaration"];
+const EXPORTDECLARATION_TYPES = exports.EXPORTDECLARATION_TYPES = _index.FLIPPED_ALIAS_KEYS["ExportDeclaration"];
+const MODULESPECIFIER_TYPES = exports.MODULESPECIFIER_TYPES = _index.FLIPPED_ALIAS_KEYS["ModuleSpecifier"];
+const ACCESSOR_TYPES = exports.ACCESSOR_TYPES = _index.FLIPPED_ALIAS_KEYS["Accessor"];
+const PRIVATE_TYPES = exports.PRIVATE_TYPES = _index.FLIPPED_ALIAS_KEYS["Private"];
+const FLOW_TYPES = exports.FLOW_TYPES = _index.FLIPPED_ALIAS_KEYS["Flow"];
+const FLOWTYPE_TYPES = exports.FLOWTYPE_TYPES = _index.FLIPPED_ALIAS_KEYS["FlowType"];
+const FLOWBASEANNOTATION_TYPES = exports.FLOWBASEANNOTATION_TYPES = _index.FLIPPED_ALIAS_KEYS["FlowBaseAnnotation"];
+const FLOWDECLARATION_TYPES = exports.FLOWDECLARATION_TYPES = _index.FLIPPED_ALIAS_KEYS["FlowDeclaration"];
+const FLOWPREDICATE_TYPES = exports.FLOWPREDICATE_TYPES = _index.FLIPPED_ALIAS_KEYS["FlowPredicate"];
+const ENUMBODY_TYPES = exports.ENUMBODY_TYPES = _index.FLIPPED_ALIAS_KEYS["EnumBody"];
+const ENUMMEMBER_TYPES = exports.ENUMMEMBER_TYPES = _index.FLIPPED_ALIAS_KEYS["EnumMember"];
+const JSX_TYPES = exports.JSX_TYPES = _index.FLIPPED_ALIAS_KEYS["JSX"];
+const MISCELLANEOUS_TYPES = exports.MISCELLANEOUS_TYPES = _index.FLIPPED_ALIAS_KEYS["Miscellaneous"];
+const TYPESCRIPT_TYPES = exports.TYPESCRIPT_TYPES = _index.FLIPPED_ALIAS_KEYS["TypeScript"];
+const TSTYPEELEMENT_TYPES = exports.TSTYPEELEMENT_TYPES = _index.FLIPPED_ALIAS_KEYS["TSTypeElement"];
+const TSTYPE_TYPES = exports.TSTYPE_TYPES = _index.FLIPPED_ALIAS_KEYS["TSType"];
+const TSBASETYPE_TYPES = exports.TSBASETYPE_TYPES = _index.FLIPPED_ALIAS_KEYS["TSBaseType"];
+const MODULEDECLARATION_TYPES = exports.MODULEDECLARATION_TYPES = IMPORTOREXPORTDECLARATION_TYPES;
 
 //# sourceMappingURL=index.js.map

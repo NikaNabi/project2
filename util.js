@@ -3,69 +3,28 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.canSkipRegexpu = canSkipRegexpu;
-exports.generateRegexpuOptions = generateRegexpuOptions;
-exports.transformFlags = transformFlags;
-var _features = require("./features.js");
-function generateRegexpuOptions(pattern, toTransform) {
-  const feat = name => {
-    return (0, _features.hasFeature)(toTransform, _features.FEATURES[name]) ? "transform" : false;
-  };
-  const featDuplicateNamedGroups = () => {
-    if (!feat("duplicateNamedCaptureGroups")) return false;
-    const regex = /\(\?<([^>]+)>/g;
-    const seen = new Set();
-    for (let match; match = regex.exec(pattern); seen.add(match[1])) {
-      if (seen.has(match[1])) return "transform";
-    }
-    return false;
-  };
-  return {
-    unicodeFlag: feat("unicodeFlag"),
-    unicodeSetsFlag: feat("unicodeSetsFlag"),
-    dotAllFlag: feat("dotAllFlag"),
-    unicodePropertyEscapes: feat("unicodePropertyEscape"),
-    namedGroups: feat("namedCaptureGroups") || featDuplicateNamedGroups(),
-    onNamedGroup: () => {},
-    modifiers: feat("modifiers")
-  };
-}
-function canSkipRegexpu(node, options) {
-  const {
-    flags,
-    pattern
-  } = node;
-  if (flags.includes("v")) {
-    if (options.unicodeSetsFlag === "transform") return false;
-  }
-  if (flags.includes("u")) {
-    if (options.unicodeFlag === "transform") return false;
-    if (options.unicodePropertyEscapes === "transform" && /\\p\{/i.test(pattern)) {
-      return false;
+exports.createUnionType = createUnionType;
+var _t = require("@babel/types");
+const {
+  createFlowUnionType,
+  createTSUnionType,
+  createUnionTypeAnnotation,
+  isFlowType,
+  isTSType
+} = _t;
+function createUnionType(types) {
+  {
+    if (types.every(v => isFlowType(v))) {
+      if (createFlowUnionType) {
+        return createFlowUnionType(types);
+      }
+      return createUnionTypeAnnotation(types);
+    } else if (types.every(v => isTSType(v))) {
+      if (createTSUnionType) {
+        return createTSUnionType(types);
+      }
     }
   }
-  if (flags.includes("s")) {
-    if (options.dotAllFlag === "transform") return false;
-  }
-  if (options.namedGroups === "transform" && /\(\?<(?![=!])/.test(pattern)) {
-    return false;
-  }
-  if (options.modifiers === "transform" && /\(\?[\w-]+:/.test(pattern)) {
-    return false;
-  }
-  return true;
-}
-function transformFlags(regexpuOptions, flags) {
-  if (regexpuOptions.unicodeSetsFlag === "transform") {
-    flags = flags.replace("v", "u");
-  }
-  if (regexpuOptions.unicodeFlag === "transform") {
-    flags = flags.replace("u", "");
-  }
-  if (regexpuOptions.dotAllFlag === "transform") {
-    flags = flags.replace("s", "");
-  }
-  return flags;
 }
 
 //# sourceMappingURL=util.js.map
