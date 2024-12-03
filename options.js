@@ -3,22 +3,41 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.TargetNames = void 0;
-const TargetNames = exports.TargetNames = {
-  node: "node",
-  deno: "deno",
-  chrome: "chrome",
-  opera: "opera",
-  edge: "edge",
-  firefox: "firefox",
-  safari: "safari",
-  ie: "ie",
-  ios: "ios",
-  android: "android",
-  electron: "electron",
-  samsung: "samsung",
-  rhino: "rhino",
-  opera_mobile: "opera_mobile"
+exports.UseBuiltInsOption = exports.TopLevelOptions = exports.ModulesOption = void 0;
+const TopLevelOptions = exports.TopLevelOptions = {
+  bugfixes: "bugfixes",
+  configPath: "configPath",
+  corejs: "corejs",
+  debug: "debug",
+  exclude: "exclude",
+  forceAllTransforms: "forceAllTransforms",
+  ignoreBrowserslistConfig: "ignoreBrowserslistConfig",
+  include: "include",
+  modules: "modules",
+  shippedProposals: "shippedProposals",
+  targets: "targets",
+  useBuiltIns: "useBuiltIns",
+  browserslistEnv: "browserslistEnv"
+};
+{
+  Object.assign(TopLevelOptions, {
+    loose: "loose",
+    spec: "spec"
+  });
+}
+const ModulesOption = exports.ModulesOption = {
+  false: false,
+  auto: "auto",
+  amd: "amd",
+  commonjs: "commonjs",
+  cjs: "cjs",
+  systemjs: "systemjs",
+  umd: "umd"
+};
+const UseBuiltInsOption = exports.UseBuiltInsOption = {
+  false: false,
+  entry: "entry",
+  usage: "usage"
 };
 
 //# sourceMappingURL=options.js.map

@@ -3,26 +3,35 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.getInclusionReasons = getInclusionReasons;
-var _semver = require("semver");
-var _pretty = require("./pretty.js");
-var _utils = require("./utils.js");
-function getInclusionReasons(item, targetVersions, list) {
-  const minVersions = list[item] || {};
-  return Object.keys(targetVersions).reduce((result, env) => {
-    const minVersion = (0, _utils.getLowestImplementedVersion)(minVersions, env);
-    const targetVersion = targetVersions[env];
-    if (!minVersion) {
-      result[env] = (0, _pretty.prettifyVersion)(targetVersion);
-    } else {
-      const minIsUnreleased = (0, _utils.isUnreleasedVersion)(minVersion, env);
-      const targetIsUnreleased = (0, _utils.isUnreleasedVersion)(targetVersion, env);
-      if (!targetIsUnreleased && (minIsUnreleased || _semver.lt(targetVersion.toString(), (0, _utils.semverify)(minVersion)))) {
-        result[env] = (0, _pretty.prettifyVersion)(targetVersion);
+exports.logPlugin = void 0;
+var _helperCompilationTargets = require("@babel/helper-compilation-targets");
+var _plugins = require("@babel/compat-data/plugins");
+const logPlugin = (item, targetVersions, list) => {
+  const filteredList = (0, _helperCompilationTargets.getInclusionReasons)(item, targetVersions, list);
+  const support = list[item];
+  {
+    if (item.startsWith("transform-")) {
+      const proposalName = `proposal-${item.slice(10)}`;
+      if (proposalName === "proposal-dynamic-import" || hasOwnProperty.call(_plugins, proposalName)) {
+        item = proposalName;
       }
     }
-    return result;
-  }, {});
-}
+  }
+  if (!support) {
+    console.log(`  ${item}`);
+    return;
+  }
+  let formattedTargets = `{`;
+  let first = true;
+  for (const target of Object.keys(filteredList)) {
+    if (!first) formattedTargets += `,`;
+    first = false;
+    formattedTargets += ` ${target}`;
+    if (support[target]) formattedTargets += ` < ${support[target]}`;
+  }
+  formattedTargets += ` }`;
+  console.log(`  ${item} ${formattedTargets}`);
+};
+exports.logPlugin = logPlugin;
 
 //# sourceMappingURL=debug.js.map

@@ -1,42 +1,27 @@
 "use strict";
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-Object.defineProperty(exports, "convertFunctionParams", {
-  enumerable: true,
-  get: function () {
-    return _params.default;
-  }
-});
+exports.__esModule = true;
 exports.default = void 0;
+
+var _path = _interopRequireDefault(require("path"));
+
 var _helperPluginUtils = require("@babel/helper-plugin-utils");
-var _params = require("./params.js");
-var _rest = require("./rest.js");
-var _default = exports.default = (0, _helperPluginUtils.declare)((api, options) => {
-  var _api$assumption, _api$assumption2;
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * @babel/preset-modules produces clean, minimal output for ES Modules-supporting browsers.
+ * @param {Object} [options]
+ * @param {boolean} [options.loose=false] Loose mode skips seldom-needed transforms that increase output size.
+ */
+var _default = (0, _helperPluginUtils.declare)((api, opts) => {
   api.assertVersion(7);
-  const ignoreFunctionLength = (_api$assumption = api.assumption("ignoreFunctionLength")) != null ? _api$assumption : options.loose;
-  const noNewArrows = (_api$assumption2 = api.assumption("noNewArrows")) != null ? _api$assumption2 : true;
+  const loose = opts.loose === true;
   return {
-    name: "transform-parameters",
-    visitor: {
-      Function(path) {
-        if (path.isArrowFunctionExpression() && path.get("params").some(param => param.isRestElement() || param.isAssignmentPattern())) {
-          path.arrowFunctionToExpression({
-            allowInsertArrowWithRest: false,
-            noNewArrows
-          });
-          if (!path.isFunctionExpression()) return;
-        }
-        const convertedRest = (0, _rest.default)(path);
-        const convertedParams = (0, _params.default)(path, ignoreFunctionLength);
-        if (convertedRest || convertedParams) {
-          path.scope.crawl();
-        }
-      }
-    }
+    plugins: [_path.default.resolve(__dirname, "./plugins/transform-edge-default-parameters"), _path.default.resolve(__dirname, "./plugins/transform-tagged-template-caching"), _path.default.resolve(__dirname, "./plugins/transform-jsx-spread"), _path.default.resolve(__dirname, "./plugins/transform-safari-for-shadowing"), _path.default.resolve(__dirname, "./plugins/transform-safari-block-shadowing"), _path.default.resolve(__dirname, "./plugins/transform-async-arrows-in-class"), !loose && _path.default.resolve(__dirname, "./plugins/transform-edge-function-name"), // Proposals
+    require.resolve("@babel/plugin-proposal-unicode-property-regex"), require.resolve("@babel/plugin-transform-dotall-regex")].filter(Boolean)
   };
 });
 
-//# sourceMappingURL=index.js.map
+exports.default = _default;
+module.exports = exports.default;
